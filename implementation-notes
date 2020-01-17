@@ -9,7 +9,7 @@ https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lamb
 https://react-bootstrap.netlify.com/getting-started/introduction
 https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
 https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-
+https://aws.amazon.com/blogs/compute/announcing-websocket-apis-in-amazon-api-gateway/
 
 Secret Handshake to assure the caller of a service is using code from a specific domain. This would be used to verify that a service is being called from a specific application.
 
