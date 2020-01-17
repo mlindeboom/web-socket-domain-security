@@ -1,0 +1,112 @@
+WebSocketDomainSecurity
+
+Documentation for WebSocketDomainSecurity
+https://www.freecodecamp.org/news/real-time-applications-using-websockets-with-aws-api-gateway-and-lambda-a5bb493e9452/
+https://hackernoon.com/websockets-api-gateway-9d4aca493d39
+https://blog.teamtreehouse.com/an-introduction-to-websockets
+https://stackoverflow.com/questions/3946958/pass-function-in-json-and-execute
+https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html
+https://react-bootstrap.netlify.com/getting-started/introduction
+https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+
+
+Secret Handshake to assure the caller of a service is using code from a specific domain. This would be used to verify that a service is being called from a specific application.
+
+	File has codes
+
+	Random file distributed with app from static s3
+
+	Websocket sends a value and file url
+
+	Algorithm  (downloaded from websocket but run on browser)
+	Possible process 1
+		Takes value and calculates file offset
+		Reads data at file offset and sends a return message
+
+Try this:
+
+Software shreads included with app from s3 and called from a code fragment loaded from websocket
+
+Load code to call and run eval() return the value calculated by the function via websocket
+checksum for specified file
+crc for specified file
+bytes at offset for specified file
+
+
+
+
+Build List
+
+connect
+disconnect
+sendExecutable
+invokeExecutable
+
+button - connect
+button - disconnect
+button - invoke some protected function
+onInvokeExecutable - catches request to invoke the executable
+onExecutableSent - catches the function that will be run (maybe combine this with invoke?)
+
+*********Sample 1*********
+var myfunc = function () {
+    alert('It works!');
+}
+
+var as_string = myfunc.toString();
+
+as_string = as_string.replace('It works', 'It really works');
+
+var as_func = eval('(' + as_string + ')');
+
+as_func();
+*************************
+
+**********Sample 2*******
+var tmpFunc = new Function(codeToRun);
+tmpFunc(); 
+*************************
+
+executables and results should be stored in a central function (lambda)
+two methods 
+getQuestion() - returns executable to run in the browser
+validateAnswer() - takes answer JSON and returns true if acceptable
+
+
+
+onmessage should do the following:
+case: connectionId
+	save the connectionId to a global for use in calling the services gateway
+case: executable
+	run the executable and collect the result
+	send the result through the web socket
+
+onmessage response step function should wait for a reply
+case: connectionId - do nothing
+case: executable - take reply and evaluate, update connectionId in DDB	
+
+If something hangs implement a timeout in the execute.
+
+
+Create a react and angular client to demonstrate the lambda service
+
+React - create  component that encapsulates the buttones and the connect disconnect functions along with the display.
+
+
+Cook an Android and iOS cordova version of the demo
+
+
+Throttling
+If too many requests come from the same connectionId, instruct the component to throw up a Kapcha. Once a human is verified, turn off throttling
+
+
+*************************************
+From a resource backtrack to a cloudformation template
+
+You can pass PhysicalResourceId of a resource to desribe_stack_resources and get the stack information if it belongs to a CF stack To find an EC2 host for example
+
+cf = boto3.client('cloudformation')
+cf.describe_stack_resources(PhysicalResourceId="i-07bd92638b049ccc4")
+
+AWS Documentation on this http://boto3.readthedocs.io/en/latest/reference/services/cloudformation.html#CloudFormation.Client.describe_stack_resources
