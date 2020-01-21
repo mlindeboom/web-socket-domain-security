@@ -3,5 +3,13 @@ The WebSocketDomainSecurity project uses web sockets to validate and register a 
 
 
 
-![Web Socket DOmain Security](https://github.com/mlindeboom/web-socket-domain-security/blob/master/wsdsOverview.svg)
+![Web Socket Domain Security](https://github.com/mlindeboom/web-socket-domain-security/blob/master/wsdsOverview.svg)
 
+
+1. $connect - A client first connects to your WebSocket API. A connectionId value is generated that uniquely identifies this browser client. The wsdsConnect lambda function stores the value in the connectionsDB as a new entry. A stepfunction workflow is started by the wsdsConnect function.
+
+2. connectionId - 
+3. sendExecutable - 
+4. onMessage - 
+5. REST call with connectionId - 
+6. $disconnect - 
