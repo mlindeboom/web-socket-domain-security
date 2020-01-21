@@ -8,8 +8,16 @@ The WebSocketDomainSecurity project uses web sockets to validate and register a 
 
 1. $connect - A client first connects to your WebSocket API. A connectionId value is generated that uniquely identifies this browser client. The wsdsConnect lambda function stores the value in the connectionsDB as a new entry. A stepfunction workflow is started by the wsdsConnect function.
 
-2. connectionId - 
-3. sendExecutable - 
-4. onMessage - 
-5. REST call with connectionId - 
-6. $disconnect - 
+2. connectionId - The websocket interface communicates the connectionId back to the browser client. The browser code should keep this value to use in subsequent calls.
+
+3. sendExecutable - The websocket interface sends a payload containing a JavaScript function to the browser client for the browser to execute. The results of the function must be sent back through the interface in step 4.
+
+4. onMessage - The browser execution results of the JavaScript function are sent back through the WebSocket interface to be analyzed by the wsdsVerificationResult lambda function. If the execution results match those expected by the lambda function, a pass indication is given to the waiting step function. The ConnectionValid path will call wsdsValidConnect which, in turn, updates the connectionDB to mark the connectionId as verified. The ConnectionInvalid step function path leaves the connectionId unmarked indicating it is not verified.
+
+5. REST call with connectionId - Once the connectionId is verified through the websocket, REST calls can be made from the browser to the API Gateway resources protected by the wsdsAuthenticator. The REST call must have the connectionId in the request header. The wsdsAuthenticator uses the connectionId value to query the connectionsDB to see if the connectionId has been verified. Unverified connections get a 401 code returned. Requests using a verified connectionId are passed allowed through to the protected resource. 
+
+Note: the authenticator uses a default TTL of 5 minutes to cache the reults of the current authentication. 
+
+6. $disconnect - if the websocket becomes disconnected, the connectionId is removed from the connectionsDB.
+
+
