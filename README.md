@@ -16,7 +16,7 @@ The WebSocketDomainSecurity project uses web sockets to validate and register a 
 
 5. REST call with connectionId - Once the connectionId is verified through the websocket, REST calls can be made from the browser to the API Gateway resources protected by the wsdsAuthenticator. The REST call must have the connectionId in the request header. The wsdsAuthenticator uses the connectionId value to query the connectionsDB to see if the connectionId has been verified. Unverified connections get a 401 code returned. Requests using a verified connectionId are passed allowed through to the protected resource. 
 
-Note: the authenticator uses a default TTL of 5 minutes to cache the reults of the current authentication. 
+  Note: the authenticator uses a default TTL of 5 minutes to cache the results of the current authentication. 
 
 6. $disconnect - if the websocket becomes disconnected, the connectionId is removed from the connectionsDB.
 
