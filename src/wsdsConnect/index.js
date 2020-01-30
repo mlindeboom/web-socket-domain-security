@@ -24,7 +24,7 @@ function addConnectionId(connectionId) {
 function invokeSendConnectionId(connectionId, api){
     var inputStr = JSON.stringify({connectionId: connectionId, api: api});
     var params = {
-        stateMachineArn: 'arn:aws:states:us-east-1:859026406057:stateMachine:WebSocketDomainSecuritySendConnectionId', /* required */
+        stateMachineArn: process.env.StateMachineArn, //'arn:aws:states:us-east-1:859026406057:stateMachine:WebSocketDomainSecuritySendConnectionId', /* required */
         input: inputStr,
         name: 'wsdsSendConnection'+Date.now()
     };
