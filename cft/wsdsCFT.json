@@ -1,0 +1,406 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "WebSocketDomainSecurity template for a Step Functions state machine.",
+    "Resources": {
+        "StatesMachinePolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "VisualEditor0",
+                            "Effect": "Allow",
+                            "Action": [
+                                "states:SendTaskSuccess",
+                                "states:SendTaskFailure",
+                                "states:StartExecution",
+                                "states:SendTaskHeartbeat"
+                            ],
+                            "Resource": "*"
+                        },
+                        {
+                            "Sid": "VisualEditor1",
+                            "Effect": "Allow",
+                            "Action": "execute-api:ManageConnections",
+                            "Resource": "arn:aws:execute-api:*:*:*"
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "LambdaExecutionRole"
+                    }
+                ],
+                "PolicyName": "StatesMachinePolicy"
+            },
+            "DependsOn": [
+                "LambdaExecutionRole"
+            ]
+        },
+        "DynamoDBPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "VisualEditor0",
+                            "Effect": "Allow",
+                            "Action": [
+                                "dynamodb:PutItem",
+                                "dynamodb:DeleteItem",
+                                "dynamodb:Scan",
+                                "dynamodb:UpdateItem",
+                                "dynamodb:GetItem"
+                            ],
+                            "Resource": "*"
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "LambdaExecutionRole"
+                    }
+                ],
+                "PolicyName": "DynamoDBPolicy"
+            }
+        },
+        "LoggingPolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "VisualEditor0",
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:PutLogEvents",
+                                "logs:CreateLogStream"
+                            ],
+                            "Resource": "*"
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "LambdaExecutionRole"
+                    }
+                ],
+                "PolicyName": "LoggingPolicy"
+            }
+        },
+        "LambdaExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/"
+            }
+        },
+        "wsdsVerificationResult": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "wsds.bucket",
+                    "S3Key": "deployment/wsdsVerificationResult.zip"
+                },
+                "Description": "Verify response to executed code and update DB",
+                "FunctionName": "wsdsVerificationResult",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs12.x"
+            }
+        },
+        "wsdsAuthenticator": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "wsds.bucket",
+                    "S3Key": "deployment/wsdsAuthenticator.zip"
+                },
+                "Description": "Verify that the authorizationToken is verified and return a policy or 403",
+                "FunctionName": "wsdsAuthenticator",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs12.x"
+            }
+        },
+        "wsdsConnect": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "wsds.bucket",
+                    "S3Key": "deployment/wsdsConnect.zip"
+                },
+                "Description": "WebSocket Domain Security connect function",
+                "FunctionName": "wsdsConnect",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs12.x",
+                "Environment": {
+                    "Variables": {
+                        "StateMachineArn": {
+                            "Ref": "wsdsStateMachine"
+                        }
+                    }
+                }
+            }
+        },
+        "wsdsQandA": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "wsds.bucket",
+                    "S3Key": "deployment/wsdsQandA.zip"
+                },
+                "Description": "Function implements Ramdomized Questions and Answer",
+                "FunctionName": "wsdsQandA",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs12.x"
+            }
+        },
+        "wsdsSendConnectionId": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "wsds.bucket",
+                    "S3Key": "deployment/wsdsSendConnectionId.zip"
+                },
+                "Description": "Send the connectionId back to the client",
+                "FunctionName": "wsdsSendConnectionId",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs12.x"
+            }
+        },
+        "wsdsSendExecutable": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "wsds.bucket",
+                    "S3Key": "deployment/wsdsSendExecutable.zip"
+                },
+                "Description": "Send a function for the browser to execute",
+                "FunctionName": "wsdsSendExecutable",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs12.x"
+            }
+        },
+        "wsdsValidConnection": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "wsds.bucket",
+                    "S3Key": "deployment/wsdsValidConnection.zip"
+                },
+                "Description": "Set valid connection status in DynamoDB",
+                "FunctionName": "wsdsValidConnection",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs12.x"
+            }
+        },
+        "wsdsDisconnect": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "wsds.bucket",
+                    "S3Key": "deployment/wsdsDisconnect.zip"
+                },
+                "Description": "WebSocket Domain Security disconnect function",
+                "FunctionName": "wsdsDisconnect",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs12.x"
+            }
+        },
+        "StatesExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    {
+                                        "Fn::Sub": "states.${AWS::Region}.amazonaws.com"
+                                    }
+                                ]
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "StatesExecutionPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "lambda:InvokeFunction"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "wsdsStateMachine": {
+            "Type": "AWS::StepFunctions::StateMachine",
+            "Properties": {
+                "StateMachineName": "wsdsStateMachine",
+                "DefinitionString": {
+                    "Fn::Sub": [
+                        "{\n    \"Comment\": \"WebSocketDomainSecurity State Machine\",\n    \"StartAt\": \"wait_using_seconds\",\n    \"States\": {\n        \"wait_using_seconds\": {\n            \"Type\": \"Wait\",\n            \"Seconds\": 2,\n            \"Next\": \"SendConnectId\"\n        },\n        \"SendConnectId\": {\n            \"Type\": \"Task\",\n            \"Resource\": \"${wsdsSendConnectionIdArn}\",\n            \"ResultPath\": null,\n            \"Next\": \"SendExecutable\"\n        },\n        \"SendExecutable\": {\n            \"Type\": \"Task\",\n            \"Resource\": \"arn:aws:states:::lambda:invoke.waitForTaskToken\",\n            \"Parameters\": {\n                \"FunctionName\": \"wsdsSendExecutable\",\n                \"Payload\": {\n                \"token.$\": \"$$.Task.Token\",\n                \"connectionId.$\": \"$.connectionId\",\n                \"api.$\": \"$.api\"\n                }\n            },\n            \"Next\": \"IsConnectionValid\"\n        },\n        \"IsConnectionValid\": {\n            \"Type\": \"Choice\",\n            \"Choices\": [\n                {\n                \"Variable\": \"$.goto\",\n                \"StringEquals\": \"pass\",\n                \"Next\": \"ConnectionValid\"\n                },\n                {\n                \"Variable\": \"$.goto\",\n                \"StringEquals\": \"fail\",\n                \"Next\": \"ConnectionInvalid\"\n                }\n            ],\n            \"Default\": \"ConnectionInvalid\"\n        },\n        \"ConnectionValid\": {\n            \"Type\": \"Task\",\n            \"Resource\": \"${wsdsValidConnectionArn}\",\n            \"End\": true\n        },\n        \"ConnectionInvalid\": {\n            \"Type\": \"Pass\",\n            \"End\": true\n        }\n    }\n}",
+                        {
+                            "wsdsSendConnectionIdArn": {
+                                "Fn::GetAtt": [
+                                    "wsdsSendConnectionId",
+                                    "Arn"
+                                ]
+                            },
+                            "wsdsValidConnectionArn": {
+                                "Fn::GetAtt": [
+                                    "wsdsValidConnection",
+                                    "Arn"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "RoleArn": {
+                    "Fn::GetAtt": [
+                        "StatesExecutionRole",
+                        "Arn"
+                    ]
+                }
+            }
+        },
+        "WebSocketDomainSecurity": {
+            "Type": "AWS::ApiGatewayV2::Api",
+            "Properties": {
+                "Name": "WebSocketDomainSecurity",
+                "ProtocolType": "WEBSOCKET",
+                "RouteSelectionExpression": "$request.body.action"
+            }
+        },
+        "wsdsConnectRoute": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+                "ApiId": {
+                    "Ref": "WebSocketDomainSecurity"
+                },
+                "RouteKey": "$connect",
+                "AuthorizationType": "NONE",
+                "OperationName": "wsdsConnectRoute",
+                "RouteResponseSelectionExpression": "$default",
+                "Target": {
+                    "Fn::Join": [
+                        "/",
+                        [
+                            "integrations",
+                            {
+                                "Ref": "wsdsConnectInteg"
+                            }
+                        ]
+                    ]
+                }
+            }
+        },
+        "wsdsConnectInteg": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+                "ApiId": {
+                    "Ref": "WebSocketDomainSecurity"
+                },
+                "Description": "Integration for builtin $connect route",
+                "IntegrationType": "AWS_PROXY",
+                "IntegrationUri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      { 
+                        "Fn::GetAtt" : [ "wsdsConnect", "Arn" ] 
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+            }            
+        }
+    }
+}
